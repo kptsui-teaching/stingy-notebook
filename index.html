@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>記仇紀念中學｜缺點通知書生成器</title>
+<style>
+  :root {
+    --ink: #111;
+    --navy: #1b2a4a;
+    --paper: #fffef9;
+    --line: #222;
+    --muted: #555;
+    --bg: #ece9e2;
+    --panel: #ffffff;
+    --accent: #1b2a4a;
+    --sheet-w: 794px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Heiti TC", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-text-size-adjust: 100%;
+  }
+  .app {
+    display: grid;
+    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .panel {
+    background: var(--panel);
+    border-right: 1px solid #d5d0c6;
+    padding: 16px 14px 24px;
+    overflow: auto;
+    max-height: 100vh;
+    max-height: 100dvh;
+    position: sticky;
+    top: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  .panel h1 {
+    margin: 0 0 4px;
+    font-size: 17px;
+    color: var(--navy);
+    letter-spacing: 0.06em;
+  }
+  .panel .sub {
+    margin: 0 0 12px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    margin: 10px 0 4px;
+  }
+  input, textarea {
+    width: 100%;
+    border: 1px solid #c9c3b8;
+    border-radius: 8px;
+    padding: 10px 10px;
+    font: inherit;
+    font-size: 16px; /* avoid iOS zoom on focus */
+    background: #fff;
+    color: var(--ink);
+  }
+  textarea { min-height: 72px; resize: vertical; line-height: 1.5; font-size: 15px; }
+  .row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 10px;
+    background: var(--panel);
+  }
+  button {
+    border: none;
+    border-radius: 8px;
+    padding: 11px 14px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-ghost { background: #eee9df; color: var(--navy); }
+
+  .preview-wrap {
+    padding: 16px 12px 32px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: hidden;
+    min-width: 0;
+  }
+  .preview-stage {
+    width: 100%;
+    max-width: var(--sheet-w);
+    /* height set by JS after scale */
+    position: relative;
+  }
+  .sheet {
+    width: var(--sheet-w);
+    min-height: 1123px;
+    background: var(--paper);
+    padding: 42px 52px 36px;
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform-origin: top center;
+    /* transform scale set by JS */
+    color: #111;
+    font-family: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", "MingLiU", serif;
+    box-shadow: 0 2px 16px rgba(0,0,0,.14);
+  }
+
+  .sheet .addr {
+    text-align: center;
+    font-size: 10px;
+    color: #666;
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+  }
+  .letterhead {
+    display: grid;
+    grid-template-columns: 110px 1fr 118px;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 2.5px solid var(--navy);
+    position: relative;
+  }
+  .letterhead::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -5px;
+    border-bottom: 1px solid var(--navy);
+  }
+  .crest { width: 100px; height: 100px; display: block; margin: 0 auto; }
+  .centre { text-align: center; min-width: 0; }
+  .school-zh {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    color: var(--navy);
+    text-indent: 0.35em;
+    white-space: nowrap;
+  }
+  .school-en {
+    margin: 6px 0 0;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: #3a4660;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .motto {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: #5a4630;
+    letter-spacing: 0.2em;
+    white-space: nowrap;
+  }
+  .ref-block {
+    text-align: right;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #222;
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    white-space: nowrap;
+  }
+  .doc-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.55em;
+    text-indent: 0.55em;
+    margin: 26px 0 18px;
+  }
+  .doc-title span {
+    display: inline-block;
+    border-bottom: 2px solid #111;
+    padding: 0 8px 4px;
+  }
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+  .meta span { white-space: nowrap; }
+  .body-text {
+    font-size: 14.5px;
+    line-height: 1.85;
+    margin: 0 0 14px;
+  }
+  .indent { text-indent: 2em; }
+  table.info {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 18px;
+    font-size: 14px;
+    table-layout: fixed;
+  }
+  table.info th, table.info td {
+    border: 1px solid var(--line);
+    padding: 9px 11px;
+    vertical-align: top;
+  }
+  table.info th {
+    width: 22%;
+    background: #f4f1ea;
+    font-weight: 700;
+    text-align: justify;
+    text-align-last: justify;
+    letter-spacing: 0.15em;
+    white-space: nowrap;
+  }
+  table.info td {
+    line-height: 1.7;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .to-line { margin: 6px 0 22px; }
+  .office {
+    text-align: right;
+    font-size: 14.5px;
+    line-height: 1.95;
+    margin: 8px 0 28px;
+  }
+  .chop {
+    position: absolute;
+    right: 78px;
+    bottom: 175px;
+    width: 108px;
+    height: 108px;
+    pointer-events: none;
+  }
+  .signs {
+    display: flex;
+    justify-content: space-between;
+    gap: 48px;
+    font-size: 14.5px;
+    margin-top: 8px;
+  }
+  .signs .field { flex: 1; min-width: 0; }
+  .uline {
+    display: inline-block;
+    border-bottom: 1px solid #111;
+    min-width: 140px;
+    height: 1.1em;
+    vertical-align: bottom;
+    margin-left: 2px;
+  }
+  .foot {
+    margin-top: 34px;
+    padding-top: 10px;
+    border-top: 1px solid #888;
+    font-size: 11.5px;
+    line-height: 1.65;
+    color: #333;
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  /* Phone / narrow: form first, notice scaled to fit width — no reflow inside sheet */
+  @media (max-width: 900px) {
+    .app {
+      grid-template-columns: 1fr;
+    }
+    .panel {
+      position: relative;
+      max-height: none;
+      border-right: none;
+      border-bottom: 1px solid #d5d0c6;
+    }
+    .preview-wrap {
+      padding: 12px 8px 40px;
+    }
+  }
+
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff; }
+    .panel, .no-print { display: none !important; }
+    .app { display: block; }
+    .preview-wrap { padding: 0; overflow: visible; }
+    .preview-stage {
+      max-width: none;
+      width: auto !important;
+      height: auto !important;
+    }
+    .sheet {
+      position: static;
+      left: auto;
+      width: auto;
+      min-height: auto;
+      margin: 0;
+      padding: 0;
+      box-shadow: none;
+      transform: none !important;
+    }
+    .chop { bottom: 120px; right: 40px; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel no-print">
+      <h1>缺點通知書生成器</h1>
+      <p class="sub">記仇紀念中學 · 右邊／下方即時預覽（手機亦會等比縮放，通告內排版唔會移位）。撳「列印／匯出 PDF」出正式版。</p>
+
+      <div class="row2">
+        <div>
+          <label for="serial">檔號序號</label>
+          <input id="serial" type="text" inputmode="numeric" value="002" autocomplete="off" />
+        </div>
+        <div>
+          <label for="issueDate">發出日期</label>
+          <input id="issueDate" type="text" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label for="name">姓名</label>
+          <input id="name" type="text" autocomplete="off" />
+        </div>
+        <div>
+          <label for="className">班別／組別</label>
+          <input id="className" type="text" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label for="studentId">學號</label>
+          <input id="studentId" type="text" autocomplete="off" />
+        </div>
+        <div>
+          <label for="incidentDate">事發日期</label>
+          <input id="incidentDate" type="text" placeholder="可留空＝同發出日期" autocomplete="off" />
+        </div>
+      </div>
+
+      <label for="place">事發地點</label>
+      <input id="place" type="text" autocomplete="off" />
+
+      <label for="offense">違規事項</label>
+      <textarea id="offense"></textarea>
+
+      <label for="details">違規經過</label>
+      <textarea id="details" style="min-height:110px"></textarea>
+
+      <label for="penalty">處分</label>
+      <textarea id="penalty"></textarea>
+
+      <label for="remark">備註</label>
+      <textarea id="remark"></textarea>
+
+      <div class="actions">
+        <button type="button" class="btn-primary" id="btnPrint">列印／匯出 PDF</button>
+        <button type="button" class="btn-ghost" id="btnClear">清空重填</button>
+        <button type="button" class="btn-ghost" id="btnSample">載入示範</button>
+      </div>
+    </aside>
+
+    <main class="preview-wrap">
+      <div class="preview-stage" id="previewStage">
+        <article class="sheet" id="sheet" aria-label="缺點通知書預覽">
+          <div class="addr">九龍記仇道八十八號　電話：2388 8888　傳真：2388 8800</div>
+
+          <div class="letterhead">
+            <div>
+              <svg class="crest" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                  <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#f0d78c"/>
+                    <stop offset="45%" stop-color="#c9a227"/>
+                    <stop offset="100%" stop-color="#8a6b14"/>
+                  </linearGradient>
+                  <linearGradient id="navyG" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#243868"/>
+                    <stop offset="100%" stop-color="#121c38"/>
+                  </linearGradient>
+                  <linearGradient id="shieldFace" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#2c457a"/>
+                    <stop offset="100%" stop-color="#152240"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="100" cy="100" r="96" fill="url(#navyG)"/>
+                <circle cx="100" cy="100" r="90" fill="none" stroke="url(#gold)" stroke-width="3.5"/>
+                <circle cx="100" cy="100" r="84" fill="none" stroke="#d8b85a" stroke-width="1"/>
+                <path d="M100 38 C118 38, 142 42, 148 48 L148 95 C148 128, 128 148, 100 162 C72 148, 52 128, 52 95 L52 48 C58 42, 82 38, 100 38 Z" fill="url(#shieldFace)" stroke="url(#gold)" stroke-width="2.5"/>
+                <path d="M70 88 L100 78 L130 88 L130 118 L100 108 L70 118 Z" fill="#f7f1e0" stroke="#d8b85a" stroke-width="1.2"/>
+                <path d="M100 78 L100 108" stroke="#8a6b14" stroke-width="1.2"/>
+                <path d="M78 96 H92 M78 102 H90 M78 108 H88" stroke="#5a4630" stroke-width="1" opacity=".7"/>
+                <path d="M108 96 H122 M110 102 H122 M112 108 H122" stroke="#5a4630" stroke-width="1" opacity=".7"/>
+                <path d="M100 58 L100 74" stroke="#f0d78c" stroke-width="2"/>
+                <circle cx="100" cy="56" r="3.2" fill="#f0d78c"/>
+                <path d="M86 68 Q100 62 114 68" fill="none" stroke="#f0d78c" stroke-width="1.6"/>
+                <path d="M86 68 L80 78 L92 78 Z" fill="#c9a227"/>
+                <path d="M114 68 L108 78 L120 78 Z" fill="#c9a227"/>
+                <path d="M48 148 Q100 136 152 148 L146 168 Q100 156 54 168 Z" fill="url(#gold)" stroke="#8a6b14" stroke-width="1"/>
+                <text x="100" y="160" text-anchor="middle" fill="#1b2a4a" font-family="Noto Serif TC, Songti TC, serif" font-size="13" font-weight="700" letter-spacing="2">記仇紀念</text>
+              </svg>
+            </div>
+            <div class="centre">
+              <h1 class="school-zh">記仇紀念中學</h1>
+              <p class="school-en">Grudge Memorial Secondary School</p>
+              <p class="motto">校訓：記所當記　仇所當仇</p>
+            </div>
+            <div class="ref-block">
+              檔號：JCMS/訓／<span id="oYear">2026</span>／<span id="oSerial">002</span><br>
+              密件程度：普通<br>
+              頁數：共一頁
+            </div>
+          </div>
+
+          <h2 class="doc-title"><span>缺點通知書</span></h2>
+
+          <div class="meta">
+            <span>致：有關家長／監護人／友人</span>
+            <span>發出日期：<span id="oIssueDate"></span></span>
+          </div>
+
+          <p class="body-text">敬啟者：</p>
+          <p class="body-text indent">現通知 貴子弟／貴友人於本校活動範圍內違反校規，詳情如下。敬請查閱，並督促當事人反省改進。如有查詢，請於辦公時間致電本校訓導處。</p>
+
+          <table class="info">
+            <tr><th>姓　　名</th><td id="oName"></td></tr>
+            <tr><th>班　　別</th><td id="oClass"></td></tr>
+            <tr><th>學　　號</th><td id="oStudentId"></td></tr>
+            <tr><th>事發日期</th><td id="oIncidentDate"></td></tr>
+            <tr><th>事發地點</th><td id="oPlace"></td></tr>
+            <tr><th>違規事項</th><td id="oOffense"></td></tr>
+            <tr><th>違規經過</th><td id="oDetails"></td></tr>
+            <tr><th>處　　分</th><td id="oPenalty"></td></tr>
+            <tr><th>備　　註</th><td id="oRemark"></td></tr>
+          </table>
+
+          <p class="body-text to-line">此致<br>　台照</p>
+
+          <div class="office">
+            訓導主任　　＿＿＿＿＿＿＿＿　（簽署）<br>
+            記仇紀念中學　訓導處　啟<br>
+            <span id="oOfficeDate"></span>
+          </div>
+
+          <svg class="chop" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="100" cy="100" r="92" fill="none" stroke="#b42318" stroke-width="7" opacity="0.92"/>
+            <circle cx="100" cy="100" r="78" fill="none" stroke="#b42318" stroke-width="2" opacity="0.92"/>
+            <text x="100" y="78" text-anchor="middle" fill="#b42318" font-size="22" font-family="Noto Serif TC, Songti TC, serif" font-weight="700" opacity="0.92">記仇紀念中學</text>
+            <text x="100" y="118" text-anchor="middle" fill="#b42318" font-size="28" font-family="Noto Serif TC, Songti TC, serif" font-weight="700" opacity="0.92">訓導處</text>
+            <text x="100" y="148" text-anchor="middle" fill="#b42318" font-size="16" font-family="Noto Serif TC, Songti TC, serif" font-weight="700" opacity="0.92">印</text>
+          </svg>
+
+          <div class="signs">
+            <div class="field">家長／友人簽署：<span class="uline"></span></div>
+            <div class="field">日期：<span class="uline" style="min-width:120px"></span></div>
+          </div>
+          <div class="signs" style="margin-top:18px">
+            <div class="field">學生簽署：<span class="uline"></span></div>
+            <div class="field">班主任／組導師：<span class="uline"></span></div>
+          </div>
+
+          <div class="foot">
+            副本分送：訓導處存檔、班主任／組導師、當事人<br>
+            辦公時間：星期一至五　上午八時三十分至下午四時三十分
+          </div>
+        </article>
+      </div>
+    </main>
+  </div>
+
+<script>
+(function () {
+  var SAMPLE = {
+    serial: "002",
+    issueDate: "",
+    name: "黎晋希",
+    className: "友情組",
+    studentId: "F-027",
+    incidentDate: "",
+    place: "Instagram 群組",
+    offense: "每日不定時在 IG 群組發送韓國美食 reels，惟每當問起韓國畢業旅行，取態猶豫不決",
+    details: "該生每日均會在 IG 群組不定時發送韓國美食 reels，例如：烤肉、炸雞、海鮮、部隊鍋等等，貌似對韓國之旅充滿期待。惟每當問起該生是否已取得太座批准，則支吾以對。",
+    penalty: "記缺點一次；盡快取得太座同意。",
+    remark: "如對本通知內容有異議，請於接獲本通知書起計三個工作天內，以書面向訓導處提出申述。"
+  };
+
+  var ids = ["serial","issueDate","name","className","studentId","incidentDate","place","offense","details","penalty","remark"];
+  var sheet = document.getElementById("sheet");
+  var stage = document.getElementById("previewStage");
+  var wrap = document.querySelector(".preview-wrap");
+
+  function padSerial(s) {
+    s = String(s || "").trim();
+    if (/^\d+$/.test(s)) return ("000" + s).slice(-Math.max(3, s.length));
+    return s || "001";
+  }
+
+  function todayChinese() {
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = d.getMonth() + 1;
+    var day = d.getDate();
+    var digits = ["〇","一","二","三","四","五","六","七","八","九"];
+    function yearStr(n) {
+      return String(n).split("").map(function (c) { return digits[Number(c)]; }).join("");
+    }
+    function numStr(n) {
+      if (n <= 10) return n === 10 ? "十" : digits[n];
+      if (n < 20) return "十" + digits[n % 10];
+      var t = Math.floor(n / 10), o = n % 10;
+      return digits[t] + "十" + (o ? digits[o] : "");
+    }
+    return yearStr(y) + "年" + numStr(m) + "月" + numStr(day) + "日";
+  }
+
+  function val(id) {
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  function fitSheet() {
+    // Keep A4 internal layout fixed; only scale the whole sheet to fit width.
+    var avail = wrap.clientWidth - 4;
+    if (avail < 40) avail = 40;
+    var scale = Math.min(1, avail / 794);
+    sheet.style.transform = "translateX(-50%) scale(" + scale + ")";
+    // Natural height after content, then reserve scaled space so nothing overlaps.
+    sheet.style.height = "auto";
+    var h = sheet.scrollHeight;
+    stage.style.height = Math.ceil(h * scale) + "px";
+  }
+
+  function refresh() {
+    var issue = val("issueDate") || todayChinese();
+    var incident = val("incidentDate") || issue;
+    var serial = padSerial(val("serial"));
+    var y = String(new Date().getFullYear());
+    setText("oYear", y);
+    setText("oSerial", serial);
+    setText("oIssueDate", issue);
+    setText("oOfficeDate", issue);
+    setText("oName", val("name") || "　");
+    setText("oClass", val("className") || "　");
+    setText("oStudentId", val("studentId") || "　");
+    setText("oIncidentDate", incident);
+    setText("oPlace", val("place") || "　");
+    setText("oOffense", val("offense") || "　");
+    setText("oDetails", val("details") || "　");
+    setText("oPenalty", val("penalty") || "　");
+    setText("oRemark", val("remark") || "　");
+    document.title = "缺點通知書_" + (val("name") || "未命名") + "_" + serial;
+    // Wait a frame so table text wraps at fixed sheet width before measuring.
+    requestAnimationFrame(fitSheet);
+  }
+
+  function fill(data) {
+    ids.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (id === "issueDate" || id === "incidentDate") {
+        el.value = data[id] || todayChinese();
+      } else {
+        el.value = data[id] != null ? data[id] : "";
+      }
+    });
+    refresh();
+  }
+
+  function clearAll() {
+    ids.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    document.getElementById("issueDate").value = todayChinese();
+    document.getElementById("serial").value = "001";
+    refresh();
+  }
+
+  ids.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", refresh);
+    el.addEventListener("change", refresh);
+  });
+
+  document.getElementById("btnPrint").addEventListener("click", function () {
+    refresh();
+    setTimeout(function () { window.print(); }, 50);
+  });
+  document.getElementById("btnClear").addEventListener("click", clearAll);
+  document.getElementById("btnSample").addEventListener("click", function () { fill(SAMPLE); });
+
+  window.addEventListener("resize", fitSheet);
+  window.addEventListener("orientationchange", function () {
+    setTimeout(fitSheet, 200);
+  });
+
+  fill(SAMPLE);
+})();
+</script>
+</body>
+</html>
